@@ -1,7 +1,4 @@
-# *****************************************************************************
-# But: Mise en place d'un RAG ENSET-ChatBot              Prof. Ouhmida Asmae
-# T.A.F: 1/ Démarrer le programme 2/ Analyser le code 3/ Améliorer le programme
-#*******************************************************************************
+
 
 import streamlit as st
 from langchain.document_loaders import PyPDFLoader
