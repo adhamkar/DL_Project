@@ -10,7 +10,7 @@ import os
 import tempfile
 import base64
 from emotion_datection import EmotionDetector
-
+import requests
 
 # Function to autoplay audio
 def autoplay_audio(file_path: str):
@@ -35,6 +35,9 @@ if 'audio_dir' not in st.session_state:
 # Initialize the EmotionDetector
 if 'emotion_detector' not in st.session_state:
     st.session_state.emotion_detector = EmotionDetector()
+
+# FastAPI endpoint URL
+API_URL = "http://127.0.0.1:8000"
 
 # Sidebar for PDF upload
 st.sidebar.title("Upload PDF")
@@ -117,40 +120,47 @@ query = st.chat_input("Ask a question about the PDF:")
 if query and st.session_state.qa_chain:
     with st.spinner("Generating response..."):
         # Detect user's emotion
-        emotion = st.session_state.emotion_detector.detect_emotion(duration=10)
+        emotion = st.session_state.emotion_detector.detect_emotion(duration=10  )
         if emotion:
             st.write(f"Detected emotion: {emotion}")
 
+
         # Generate response from RAG
         result = st.session_state.qa_chain(query)
-
-        # Modify response based on detected emotion
         if emotion:
             if emotion == "happy":
                 result["result"] = f"Great to see you happy! 😊 Here's what I found: {result['result']}"
             elif emotion == "sad":
                 result["result"] = f"I'm sorry to see you feeling down. 😢 Here's what I found: {result['result']}"
             elif emotion == "angry":
-                result["result"] = f"I sense you're upset. Let's try to resolve this. 😠 Here's what I found: {result['result']}"
+                result[
+                    "result"] = f"I sense you're upset. Let's try to resolve this. 😠 Here's what I found: {result['result']}"
             elif emotion == "surprise":
                 result["result"] = f"Oh, you seem surprised! 😮 Here's what I found: {result['result']}"
             elif emotion == "fear":
-                result["result"] = f"It seems you're feeling anxious. Let's find some clarity. 😨 Here's what I found: {result['result']}"
+                result[
+                    "result"] = f"It seems you're feeling anxious. Let's find some clarity. 😨 Here's what I found: {result['result']}"
             elif emotion == "neutral":
                 result["result"] = f"Here's what I found: {result['result']}"
 
+        response = requests.post(f"{API_URL}/set_response", json={"response": result["result"]})
+        if response.status_code == 200:
+            st.success("Response sent to the API endpoint.")
+        else:
+            st.error("Failed to send response to the API endpoint.")
         # Create text-to-speech audio
         tts = gTTS(text=result["result"], lang='en')
 
-        # Generate a unique filename
+            # Generate a unique filename
         audio_file = os.path.join(st.session_state.audio_dir, f"response_{hash(query)}.mp3")
 
-        # Save and autoplay the audio file
+            # Save and autoplay the audio file
         tts.save(audio_file)
         autoplay_audio(audio_file)
 
-        # Display the response
+            # Display the response
         st.write(result["result"])
+
 
 # Cleanup old audio files
 def cleanup_old_files():
